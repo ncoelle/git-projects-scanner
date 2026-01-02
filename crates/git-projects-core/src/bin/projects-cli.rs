@@ -400,7 +400,6 @@ fn truncate(s: &str, max_width: usize) -> String {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use git_projects_core::{ConfigScope, GitConfig, RemoteUrl};
 
     #[test]
     fn test_truncate() {
