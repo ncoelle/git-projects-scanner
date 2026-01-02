@@ -1,0 +1,49 @@
+[package]
+name = "git-projects-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Niels Cölle <niels@coelle-online.com>"]
+license = "MIT OR Apache-2.0"
+description = "Core library for scanning and cataloging Git projects"
+repository = "https://github.com/ncoelle/git-projects-scanner"
+keywords = ["git", "scanner", "catalog", "repository"]
+categories = ["command-line-utilities", "development-tools"]
+
+[lib]
+name = "git_projects_core"
+path = "src/lib.rs"
+
+# CLI binary target
+[[bin]]
+name = "projects-cli"
+path = "src/bin/projects-cli.rs"
+
+[dependencies]
+# Git operations via gitoxide
+gix = { version = "0.77", default-features = false, features = ["max-performance-safe"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Localization
+fluent = "0.17"
+fluent-bundle = "0.16"
+unic-langid = "0.9"
+
+# CLI argument parsing (only needed for binary)
+clap = { version = "4.5", features = ["derive", "cargo"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# File system utilities
+dirs = "6.0"
+walkdir = "2.5"
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+tempfile = "3.10"
