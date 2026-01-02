@@ -1,0 +1,61 @@
+[workspace]
+members = [
+    "crates/git-projects-core",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0-alpha"
+edition = "2021"
+rust-version = "1.56"
+authors = ["Niels Cölle <niels@coelle-online.com>"]
+license = "MIT"
+repository = "https://github.com/ncoelle/git-projects-scanner"
+homepage = "https://github.com/ncoelle/git-projects-scanner"
+documentation = "https://docs.rs/git-projects-core"
+readme = "README.md"
+keywords = ["git", "project", "scanner", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+
+[workspace.dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Git operations (pure Rust)
+gitoxide = { version = "0.35", features = ["blocking-http-client"] }
+
+# Localization
+fluent = "0.16"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Error handling
+anyhow = "1.0"
+
+# Directory utilities
+dirs = "5.0"
+
+# Logging (optional, for future use)
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Testing
+tempfile = "3.8"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+codegen-units = 1
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+# Profile for optimized dev builds (faster builds than release, still optimized)
+[profile.dev-opt]
+inherits = "dev"
+opt-level = 2
+
