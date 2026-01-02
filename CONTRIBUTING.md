@@ -21,7 +21,7 @@ Be respectful, inclusive, and constructive. We're building a welcoming community
 
 ```bash
 # Clone the repository
-git clone https://github.com/[your-username]/git-projects-scanner.git
+git clone https://github.com/ncoelle/git-projects-scanner
 cd git-projects-scanner
 
 # Verify Rust installation

@@ -61,7 +61,7 @@ ignore = true
 
 **Why Deferred:**
 - MVP doesn't need persistence
-- File format decision not yet made (TOML vs YAML)
+- File format decision hasn’t yet been made (TOML vs YAML)
 - Core API already supports parameter passing
 
 **Decision Owner:** TBD (post-MVP)
@@ -77,7 +77,7 @@ With 100+ projects, repeated scans may be slow. Caching could help.
 
 **Current Solution (MVP):**
 - Sequential scanning with no state
-- Each invocation is fresh scan
+- Each invocation is a fresh scan
 - Polling-based (no FSEvents/inotify)
 
 **Future Approaches:**
@@ -87,12 +87,12 @@ With 100+ projects, repeated scans may be slow. Caching could help.
 4. **Parallel scanning:** Use Rayon for concurrent directory traversal
 
 **Considerations:**
-- Filesystem is bottleneck, not CPU
+- Filesystem is the bottleneck, not CPU
 - Too many parallel FS calls may hurt performance
 - Need benchmarks before implementing
 
 **Why Deferred:**
-- MVP is fast enough for typical use cases (10-100 projects)
+- MVP is fast enough for typical use cases (10–100 projects)
 - Adds complexity without clear performance metrics
 - Architecture already supports trait-based swapping
 
@@ -140,9 +140,9 @@ pub struct Platform {
 ```
 
 **Why Deferred:**
-- MVP: hostname + account extraction sufficient
+- MVP: hostname and account extraction sufficient
 - Platform-specific features require research
-- Can add without breaking existing data model
+- Can add without breaking the existing data model
 
 **Decision Owner:** TBD
 
@@ -156,7 +156,7 @@ pub struct Platform {
 In shared directories (e.g., `/shared/projects`), multiple OS accounts may own subdirectories.
 
 **Current Assumption (MVP):**
-- Single OS account (home directory based)
+- Single OS account (home-directory-based)
 - All projects belong to one user
 
 **Future Approach:**
@@ -215,7 +215,7 @@ In shared directories (e.g., `/shared/projects`), multiple OS accounts may own s
 - Fluent is modern and used by Mozilla/Firefox
 - Core returns structured data (not strings)
 - GUIs can choose their own L10N approach
-- Testable logs (important for debugging in field)
+- Testable logs (important for support)
 
 **Reference:** ADR-0003
 
@@ -347,13 +347,13 @@ In shared directories (e.g., `/shared/projects`), multiple OS accounts may own s
 - [ ] **Caching** – Performance optimization
   - SQLite-based cache
   - Invalidation strategy
-  - Benchmarks needed first
+  - Benchmarks are needed first
 
 ### Medium Priority
 
 - [ ] **Hierarchical Sorting** – `--sort-by platform,account,name`
 
-- [ ] **Platform Detection** – Custom platform types beyond hostname
+- [ ] **Platform Detection** – Custom platform types beyond the hostname
 
 - [ ] **Swift Package Integration** – For macOS app
 
@@ -388,7 +388,7 @@ In shared directories (e.g., `/shared/projects`), multiple OS accounts may own s
 1. **No persistence** – Every run re-scans everything
 2. **No config files** – CLI parameters only
 3. **No caching** – Suitable for <1000 projects
-4. **No FSEvents** – Polling only (may be slow on large directories)
+4. **No FSEvents** – Polling only (maybe slow on large directories)
 5. **No GUI** – CLI only
 6. **Single locale per run** – `--locale` per invocation
 7. **No custom patterns** – Scans all subdirectories
@@ -397,7 +397,7 @@ In shared directories (e.g., `/shared/projects`), multiple OS accounts may own s
 ### Performance Expectations
 
 - **<100 projects:** <1 second
-- **100-500 projects:** 1-5 seconds (depending on filesystem)
+- **100–500 projects:** 1–5 seconds (depending on filesystem)
 - **>500 projects:** May need caching (post-MVP)
 
 ---
@@ -412,7 +412,7 @@ In shared directories (e.g., `/shared/projects`), multiple OS accounts may own s
 - ✅ Extracting user config (local + global)
 - ✅ JSON schema validation
 - ✅ CLI argument parsing
-- ✅ L10N (German + English strings)
+- ✅ L10N (German and English strings)
 - ✅ Sorting profiles
 - ✅ Filter logic (by account, platform)
 
@@ -435,7 +435,7 @@ In shared directories (e.g., `/shared/projects`), multiple OS accounts may own s
 2. **Create ADR** in `docs/ADR/` (see ADR template)
 3. **Document** pros/cons
 4. **Link** from this file
-5. **Review** with team
+5. **Review** with the team
 6. **Finalize** and reference from DESIGN.md
 
 ### When to Defer

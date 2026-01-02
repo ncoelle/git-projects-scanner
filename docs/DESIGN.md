@@ -7,7 +7,8 @@
 
 ## 1. Overview
 
-`git-projects-scanner` is a tool for scanning and cataloging Git projects in a local directory (`~/Projects`). It displays structured information about projects, their Git accounts, platforms, and remote URLs.
+`git-projects-scanner` is a tool for scanning and cataloging Git projects in a local directory (`~/Projects`).
+It displays structured information about projects, their Git accounts, platforms, and remote URLs.
 
 ### Goals
 - Inventory all local Git projects
@@ -29,27 +30,27 @@
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│          git-projects-scanner                        │
+│          git-projects-scanner                       │
 ├─────────────────────────────────────────────────────┤
-│                                                      │
+│                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │  CLI Binary (projects-cli)                    │   │
-│  │  - Command-line interface                     │   │
-│  │  - Uses Core Library                          │   │
-│  │  - Clap for argument parsing                  │   │
+│  │  CLI Binary (projects-cli)                   │   │
+│  │  - Command-line interface                    │   │
+│  │  - Uses Core Library                         │   │
+│  │  - Clap for argument parsing                 │   │
 │  └──────────────────────────────────────────────┘   │
-│                         ↓                            │
+│                         ↓                           │
 │  ┌──────────────────────────────────────────────┐   │
-│  │  git-projects-core (Library)                  │   │
-│  │  ├── Scanner (ProjectScanner)                 │   │
+│  │  git-projects-core (Library)                 │   │
+│  │  ├── Scanner (ProjectScanner)                │   │
 │  │  ├── Models (GitProject, RemoteUrl, etc.)    │   │
 │  │  ├── GitAnalyzer (gitoxide wrapper)          │   │
 │  │  └── L10N (Fluent Integration)               │   │
 │  └──────────────────────────────────────────────┘   │
-│           ↓            ↓            ↓                │
+│           ↓            ↓            ↓               │
 │      gitoxide      Fluent      serde_json           │
-│    (Git Ops)    (Localization) (Serialization)     │
-│                                                      │
+│    (Git Ops)    (Localization) (Serialization)      │
+│                                                     │
 └─────────────────────────────────────────────────────┘
 
 Future (Post-MVP):
@@ -66,14 +67,14 @@ Future (Post-MVP):
 
 ```rust
 pub struct GitProject {
-    pub name: String,                  // Project name (e.g., "StreamAPI")
+    pub name: String,                  // Project name (e.g. "StreamAPI")
     pub local_path: PathBuf,           // Local path (e.g., ~/Projects/Java/StreamAPI)
     pub platform_host: String,         // Hostname (e.g., "github.com", "gitlab.com")
     pub account: Option<String>,       // Account/User (e.g., "champion")
     pub remote_urls: Vec<RemoteUrl>,   // origin, upstream, etc.
     pub git_config: Option<GitConfig>, // user.name, user.email, scope
     pub contains_submodules: bool,     // Has submodules?
-    pub is_valid_git_repo: bool,       // Is valid git repository?
+    pub is_valid_git_repo: bool,       // Is it a valid git repository?
 }
 
 pub struct RemoteUrl {
@@ -171,7 +172,8 @@ Each profile can be reversed with `--reverse`:
 projects --sort=platform --reverse
 ```
 
-**Why:** Simple to implement, covers 80% of use cases. Hierarchical sorting deferred to post-MVP.
+**Why:** Simple to implement, covers 80% of use cases.
+Hierarchical sorting deferred to post-MVP.
 
 ### Output Formats
 
@@ -339,18 +341,18 @@ git-projects-scanner/
 
 ## 9. Dependencies (MVP)
 
-| Crate | Version | Why | License |
-|-------|---------|-----|---------|
-| `gitoxide` | ^0.35 | Pure Rust git operations | MIT |
-| `serde` | ^1.0 | Serialization framework | MIT/Apache-2.0 |
-| `serde_json` | ^1.0 | JSON output | MIT/Apache-2.0 |
-| `fluent` | ^0.16 | L10N framework | MIT |
-| `clap` | ^4.5 | CLI argument parsing | MIT/Apache-2.0 |
-| `anyhow` | ^1.0 | Error handling | MIT/Apache-2.0 |
-| `dirs` | ^5.0 | Home directory handling | MIT/Apache-2.0 |
+| Crate        | Version  | Why                      | License        |
+|--------------|----------|--------------------------|----------------|
+| `gitoxide`   | ^0.35    | Pure Rust git operations | MIT            |
+| `serde`      | ^1.0     | Serialization framework  | MIT/Apache-2.0 |
+| `serde_json` | ^1.0     | JSON output              | MIT/Apache-2.0 |
+| `fluent`     | ^0.16    | L10N framework           | MIT            |
+| `clap`       | ^4.5     | CLI argument parsing     | MIT/Apache-2.0 |
+| `anyhow`     | ^1.0     | Error handling           | MIT/Apache-2.0 |
+| `dirs`       | ^5.0     | Home directory handling  | MIT/Apache-2.0 |
 
 **Why these?**
-- All under MIT/Apache-2.0 (compatible with MIT license)
+- All under MIT/Apache-2.0 (compatible with MIT licence)
 - Well-maintained, large ecosystems
 - Minimal dependencies (avoid "dependency hell")
 

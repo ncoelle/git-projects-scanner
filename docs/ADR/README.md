@@ -34,13 +34,13 @@ Links to other related ADRs
 
 ### Index
 
-| # | Title | Status | Date |
-|---|-------|--------|------|
-| [0001](#adr-0001) | Rust Edition and MSRV | Accepted | 2025-01 |
-| [0002](#adr-0002) | Git Library Selection: Gitoxide vs Git2 | Accepted | 2025-01 |
-| [0003](#adr-0003) | Localization Strategy: Fluent | Accepted | 2025-01 |
+| #                 | Title                                               | Status   | Date    |
+|-------------------|-----------------------------------------------------|----------|---------|
+| [0001](#adr-0001) | Rust Edition and MSRV                               | Accepted | 2025-01 |
+| [0002](#adr-0002) | Git Library Selection: Gitoxide vs Git2             | Accepted | 2025-01 |
+| [0003](#adr-0003) | Localization Strategy: Fluent                       | Accepted | 2025-01 |
 | [0004](#adr-0004) | Platform Detection: Hostname String Instead of Enum | Accepted | 2025-01 |
-| [0005](#adr-0005) | Swift Integration via Swift Package | Accepted | 2025-01 |
+| [0005](#adr-0005) | Swift Integration via Swift Package                 | Accepted | 2025-01 |
 
 ---
 
@@ -55,7 +55,8 @@ Links to other related ADRs
 
 ### Context
 
-Rust has multiple editions (2015, 2018, 2021, 2024). We need to decide which edition to use and what minimum Rust version (MSRV) to support.
+Rust has multiple editions (2015, 2018, 2021, 2024).
+We need to decide which edition to use and what minimum Rust version (MSRV) to support.
 
 **Considerations:**
 - Rust 2024 Edition was recently announced
@@ -78,7 +79,7 @@ Rust has multiple editions (2015, 2018, 2021, 2024). We need to decide which edi
 5. **MSRV 1.56:** Good balance between modern features and compatibility
 
 **Why not 2024?**
-- Not yet broadly supported in ecosystem
+- Not yet broadly supported in the ecosystem
 - Many dependencies don't support it yet
 - Breaking changes for users on older toolchains
 - No killer features for our use case
@@ -153,7 +154,8 @@ Use **gitoxide** for all git operations.
 
 ### Migration Risk
 
-Low risk: gitoxide API is stable for read operations. If issues arise, switching to git2 is feasible.
+Low risk: gitoxide API is stable for read operations.
+If issues arise, switching to git2 is doable.
 
 ### Related Decisions
 
@@ -185,7 +187,7 @@ We need multi-language support (German, English, future: others).
 1. Use **Fluent** (.ftl files) for localization
 2. **Core library:** Returns structured `GitProject` data (no translated strings)
 3. **CLI/GUI:** Handles translation of display strings
-4. **Logging:** Always in English (for debugging in field)
+4. **Logging:** Always in English (for support)
 5. **API Parameter:** Each call takes `locale: &str` (e.g., "de", "en")
 
 ### Rationale
@@ -198,7 +200,7 @@ We need multi-language support (German, English, future: others).
 
 **Core returns structured data:**
 - Separation of concerns (Core ≠ GUI)
-- GUIs have flexibility (can use own L10N system)
+- GUIs have flexibility (can use their own L10N system)
 - Easier to test (no language-dependent logic)
 
 **English logs:**
@@ -208,7 +210,7 @@ We need multi-language support (German, English, future: others).
 
 **Per-call locale parameter:**
 - Stateless, easy to test
-- GUIs can switch language without app restart
+- GUIs can switch language without restarting
 - Better than global state
 
 ### Consequences
@@ -216,7 +218,7 @@ We need multi-language support (German, English, future: others).
 **Positive:**
 - Modern, scalable L10N approach
 - Clear separation between Core and UI
-- Easy to add new languages
+- Straightforward to add new languages
 - GUIs have freedom in implementation
 
 **Negative:**
@@ -284,7 +286,7 @@ Additional fields:
 ### Rationale
 
 1. **Flexibility:** Users have diverse platforms (we can't predict all)
-2. **Future-proof:** Adding new platforms doesn't break schema
+2. **Future-proof:** Adding new platforms doesn't break the schema
 3. **Simplicity:** No enum mapping needed
 4. **Self-hosted:** Captures hostname for internal Git servers
 5. **Extensible:** Can add `platform_type: Enum` later without breaking API
@@ -354,10 +356,10 @@ The MVP is Rust core + CLI. Future work includes a native macOS GUI using Swift 
 
 ### Decision
 
-Use **Swift Package** to integrate Rust core into macOS app.
+Use **Swift Package** to integrate Rust core into a macOS app.
 
 This means:
-- Rust library compiles to Swift-compatible binary
+- Rust library compiles to a Swift-compatible binary
 - Swift Package wraps the binary/library
 - SwiftUI app uses Swift Package API
 
@@ -407,11 +409,11 @@ This means:
 
 ## How to Add New ADRs
 
-1. Create new file: `docs/ADR/XXXX-slug.md` (use next sequence number)
+1. Create the new ADR file: `docs/ADR/XXXX-slug.md` (use next sequence number)
 2. Follow the format above
 3. Set Status to "Proposed"
 4. Update this README's index
-5. Create Pull Request for discussion
+5. Create a Pull Request for discussion
 6. Once accepted, update Status to "Accepted"
 
 ## Superseded ADRs

@@ -1,6 +1,7 @@
 # git-projects-scanner
 
-A cross-platform Rust library to scan Git projects across your filesystem and group them by account and platform. Includes CLI with support for macOS, Linux, and Windows.
+A cross-platform Rust library to scan Git projects across your filesystem and group them by account and platform.
+Includes CLI with support for macOS, Linux, and Windows.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/Rust-1.56+-orange.svg)](https://www.rust-lang.org/)
@@ -17,7 +18,7 @@ A cross-platform Rust library to scan Git projects across your filesystem and gr
 - **🔍 Filter & Sort** – Filter by account or platform; sort by name, platform, account, modification time, or path
 - **📊 Multiple Output Formats** – Human-readable tables or JSON (for GUIs)
 - **🌐 Localization** – English and German supported (extensible for more)
-- **📦 Library + CLI** – Use as Rust library or command-line tool
+- **📦 Library + CLI** – Use as a Rust library or command-line tool
 
 ---
 
@@ -29,7 +30,7 @@ Currently: Build from source (Homebrew/package manager coming later)
 
 ```bash
 # Clone and build
-git clone https://github.com/[your-username]/git-projects-scanner.git
+git clone https://github.com/ncoelle/git-projects-scanner
 cd git-projects-scanner
 
 cargo install --path crates/git-projects-core
@@ -146,7 +147,7 @@ See [OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md) for the full roadmap.
              │
              ↓
 ┌─────────────────────────────────┐
-│  CLI Binary (projects-cli)       │
+│  CLI Binary (projects-cli)      │
 │  or Library (git-projects-core) │
 └────────────┬────────────────────┘
              │
@@ -182,7 +183,7 @@ See [OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md) for the full roadmap.
 
 ```bash
 # Clone
-git clone https://github.com/[your-username]/git-projects-scanner.git
+git clone https://github.com/ncoelle/git-projects-scanner
 cd git-projects-scanner
 
 # Build
@@ -208,7 +209,7 @@ cargo clippy -- -D warnings
 ### IDE Setup
 
 **RustRover (Recommended):**
-1. Open project in RustRover
+1. Open the project in RustRover
 2. Optionally install Claude plugin for AI-assisted development
 3. Build runs automatically
 
@@ -281,16 +282,16 @@ See [docs/API_SCHEMA.json](docs/API_SCHEMA.json) for the complete JSON schema.
 
 Core dependencies (all MIT/Apache-2.0 compatible):
 
-| Crate | Purpose |
-|-------|---------|
-| `gitoxide` | Pure Rust git operations (read-only) |
-| `serde` + `serde_json` | JSON serialization |
-| `fluent` | Localization framework |
-| `clap` | CLI argument parsing |
-| `anyhow` | Error handling |
-| `dirs` | Home directory detection |
+| Crate                  | Purpose                              |
+|------------------------|--------------------------------------|
+| `gitoxide`             | Pure Rust git operations (read-only) |
+| `serde` + `serde_json` | JSON serialization                   |
+| `fluent`               | Localization framework               |
+| `clap`                 | CLI argument parsing                 |
+| `anyhow`               | Error handling                       |
+| `dirs`                 | Home directory detection             |
 
-See [Cargo.toml](Cargo.toml) for full list and versions.
+See [Cargo.toml](Cargo.toml) for the full list and versions.
 
 ---
 
@@ -333,7 +334,7 @@ projects --sort=platform
 ### Current Performance (MVP)
 
 - **<100 projects:** <1 second
-- **100-500 projects:** 1-5 seconds
+- **100–500 projects:** 1–5 seconds
 - **>500 projects:** Depends on filesystem
 
 Each run performs a full scan (no caching in MVP).
@@ -386,7 +387,7 @@ Supported languages:
 
 ### Contributing Translations
 
-We welcome translation contributions! Currently using manual translation; community crowdsourcing planned.
+We welcome translation contributions. Currently using manual translation; community crowdsourcing planned.
 
 To add a new language:
 1. Create `crates/git-projects-core/locales/[lang]/main.ftl`
@@ -401,7 +402,8 @@ To add a new language:
 
 MIT License – See [LICENSE](LICENSE) file
 
-**In short:** You can use this freely, commercially or otherwise. Must include license notice.
+**In short:** You can use this freely, commercially, or otherwise.
+Must include a licence notice.
 
 ---
 
@@ -424,14 +426,15 @@ ls -la ~/Projects/.git/config
 
 ### Slow scanning
 
-Large directories with many projects may be slow. This is normal in MVP (no caching).
+Large directories with many projects may be slow.
+This is normal in MVP (no caching).
 
 For troubleshooting, enable verbose output:
 ```bash
 RUST_LOG=debug projects --verbose
 ```
 
-### JSON output doesn't match schema
+### JSON output doesn't match a schema
 
 Report an issue with:
 - The output JSON
@@ -450,12 +453,12 @@ Report an issue with:
 
 ## Roadmap
 
-See [OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md) for complete roadmap.
+See [OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md) for the complete roadmap.
 
 ### Near-term (Q1-Q2 2025)
 
 - [ ] Configuration file support
-- [ ] Performance profiling & optimization
+- [ ] Performance profiling and optimization
 - [ ] Caching layer
 
 ### Medium-term (Q3-Q4 2025)
@@ -483,7 +486,7 @@ See [OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md) for complete roadmap.
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Quick Checklist
 
@@ -513,7 +516,7 @@ Built with:
 A: No. It only reads configuration and metadata. Your code is never changed.
 
 **Q: Can I use this in production?**  
-A: MVP version is stable for reading. Not production-ready until v1.0.
+A: The MVP version is stable for reading. Not production-ready until v1.0.
 
 **Q: Will it work with Subversion or Mercurial?**  
 A: Currently git-only. Support for other VCS is not planned.
@@ -522,7 +525,7 @@ A: Currently git-only. Support for other VCS is not planned.
 A: Use the Rust library in `git-projects-core`. See [Using as a Library](#using-as-a-library) section.
 
 **Q: Is there a GUI available?**  
-A: Not yet. macOS Swift GUI planned for post-MVP. You can build your own using the library!
+A: Not yet. macOS Swift GUI planned for post-MVP. You can build your own using the library.
 
 **Q: Can I contribute translations?**  
 A: Yes! Open an issue or discussion to discuss your language.
