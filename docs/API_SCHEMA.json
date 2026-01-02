@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitProject Array",
+  "version": "0.1.0-alpha",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/GitProject"
+  },
+  "definitions": {
+    "GitProject": {
+      "type": "object",
+      "required": ["name", "local_path", "platform_host", "remote_urls"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Project name"
+        },
+        "local_path": {
+          "type": "string",
+          "description": "Relative path from scan root"
+        },
+        "platform_host": {
+          "type": "string",
+          "description": "Hostname (github.com, gitlab.com, etc.)"
+        },
+        "account": {
+          "type": ["string", "null"],
+          "description": "Account/username (null if not parsed)"
+        },
+        "remote_urls": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/RemoteUrl" }
+        },
+        "git_config": {
+          "type": ["object", "null"],
+          "properties": {
+            "user_name": { "type": ["string", "null"] },
+            "user_email": { "type": ["string", "null"] },
+            "scope": { 
+              "type": "string",
+              "enum": ["Local", "Global", "System"]
+            }
+          }
+        },
+        "contains_submodules": {
+          "type": "boolean"
+        },
+        "is_valid_git_repo": {
+          "type": "boolean"
+        }
+      }
+    },
+    "RemoteUrl": {
+      "type": "object",
+      "required": ["name", "url"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Remote name (origin, upstream, etc.)"
+        },
+        "url": {
+          "type": "string",
+          "description": "Git remote URL"
+        }
+      }
+    }
+  }
+}
+
