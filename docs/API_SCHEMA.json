@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "GitProject Array",
+  "title": "git-projects-scanner API Response",
+  "description": "JSON Schema for git-projects-scanner API output. Version 0.1.0-alpha (unstable, may change before MVP completion).",
   "version": "0.1.0-alpha",
   "type": "array",
   "items": {
@@ -9,61 +10,248 @@
   "definitions": {
     "GitProject": {
       "type": "object",
-      "required": ["name", "local_path", "platform_host", "remote_urls"],
+      "title": "Git Project",
+      "description": "A single git project discovered during scanning.",
+      "required": [
+        "name",
+        "local_path",
+        "platform_host",
+        "remote_urls",
+        "contains_submodules",
+        "is_valid_git_repo"
+      ],
       "properties": {
         "name": {
           "type": "string",
-          "description": "Project name"
+          "description": "Project name (typically the directory name). Example: 'StreamAPI', 'nbt'",
+          "minLength": 1,
+          "examples": [
+            "StreamAPI",
+            "nbt",
+            "my-project"
+          ]
         },
         "local_path": {
           "type": "string",
-          "description": "Relative path from scan root"
+          "description": "Relative path from scan root. Example: 'Java/StreamAPI' or 'Go/lo/nbt'",
+          "minLength": 1,
+          "examples": [
+            "Java/StreamAPI",
+            "Go/lo/nbt",
+            "personal/project"
+          ]
         },
         "platform_host": {
           "type": "string",
-          "description": "Hostname (github.com, gitlab.com, etc.)"
+          "description": "Git platform hostname. Examples: 'github.com', 'gitlab.com', 'codeberg.org', 'localhost' for local repos.",
+          "minLength": 1,
+          "examples": [
+            "github.com",
+            "gitlab.com",
+            "codeberg.org",
+            "localhost",
+            "git.company.internal"
+          ]
         },
         "account": {
-          "type": ["string", "null"],
-          "description": "Account/username (null if not parsed)"
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Git account/username extracted from remote URL (best effort). Null if not parseable or local repo.",
+          "minLength": 1,
+          "examples": [
+            "champion",
+            "john-doe",
+            null
+          ]
         },
         "remote_urls": {
           "type": "array",
-          "items": { "$ref": "#/definitions/RemoteUrl" }
+          "description": "List of remote URLs configured in this project.",
+          "minItems": 0,
+          "items": {
+            "$ref": "#/definitions/RemoteUrl"
+          },
+          "examples": [
+            [
+              {
+                "name": "origin",
+                "url": "https://github.com/champion/nbt.git"
+              }
+            ],
+            [
+              {
+                "name": "origin",
+                "url": "https://github.com/champion/nbt.git"
+              },
+              {
+                "name": "upstream",
+                "url": "https://github.com/original/nbt.git"
+              }
+            ]
+          ]
         },
         "git_config": {
-          "type": ["object", "null"],
-          "properties": {
-            "user_name": { "type": ["string", "null"] },
-            "user_email": { "type": ["string", "null"] },
-            "scope": { 
-              "type": "string",
-              "enum": ["Local", "Global", "System"]
-            }
-          }
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Git configuration for this project (user.name, user.email, config scope).",
+          "$ref": "#/definitions/GitConfig",
+          "examples": [
+            {
+              "user_name": "John Doe",
+              "user_email": "john@example.com",
+              "scope": "Local"
+            },
+            {
+              "user_name": "Champion",
+              "user_email": "champion@company.com",
+              "scope": "Global"
+            },
+            null
+          ]
         },
         "contains_submodules": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether the project contains git submodules (.gitmodules file present).",
+          "examples": [
+            true,
+            false
+          ]
         },
         "is_valid_git_repo": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether this is a valid git repository (.git directory exists and is readable).",
+          "examples": [
+            true,
+            false
+          ]
         }
       }
     },
     "RemoteUrl": {
       "type": "object",
-      "required": ["name", "url"],
+      "title": "Git Remote URL",
+      "description": "A single remote URL configuration.",
+      "required": [
+        "name",
+        "url"
+      ],
       "properties": {
         "name": {
           "type": "string",
-          "description": "Remote name (origin, upstream, etc.)"
+          "description": "Remote name. Typically 'origin', 'upstream', or custom names.",
+          "minLength": 1,
+          "examples": [
+            "origin",
+            "upstream",
+            "backup",
+            "mirror"
+          ]
         },
         "url": {
           "type": "string",
-          "description": "Git remote URL"
+          "description": "Remote URL. Can be HTTPS, SSH, or file:// protocol.",
+          "minLength": 1,
+          "format": "uri",
+          "examples": [
+            "https://github.com/champion/nbt.git",
+            "git@github.com:champion/nbt.git",
+            "ssh://git@gitlab.com:22/group/project.git",
+            "file:///path/to/local/repo.git"
+          ]
+        }
+      }
+    },
+    "GitConfig": {
+      "type": "object",
+      "title": "Git Configuration",
+      "description": "Git user configuration (user.name, user.email) for a project.",
+      "required": [
+        "scope"
+      ],
+      "properties": {
+        "user_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Git user.name configuration. Null if not configured.",
+          "minLength": 1,
+          "examples": [
+            "John Doe",
+            "Champion User",
+            null
+          ]
+        },
+        "user_email": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Git user.email configuration. Null if not configured.",
+          "format": "email",
+          "examples": [
+            "john@example.com",
+            "champion@company.com",
+            null
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "description": "Configuration scope: Local (project-specific), Global (user-wide), or System (machine-wide).",
+          "enum": [
+            "Local",
+            "Global",
+            "System"
+          ],
+          "examples": [
+            "Local",
+            "Global",
+            "System"
+          ]
         }
       }
     }
-  }
+  },
+  "examples": [
+    [
+      {
+        "name": "StreamAPI",
+        "local_path": "Java/StreamAPI",
+        "platform_host": "localhost",
+        "account": null,
+        "remote_urls": [],
+        "git_config": null,
+        "contains_submodules": false,
+        "is_valid_git_repo": false
+      },
+      {
+        "name": "nbt",
+        "local_path": "Go/lo/nbt",
+        "platform_host": "github.com",
+        "account": "champion",
+        "remote_urls": [
+          {
+            "name": "origin",
+            "url": "https://github.com/champion/nbt.git"
+          },
+          {
+            "name": "upstream",
+            "url": "https://github.com/original/nbt.git"
+          }
+        ],
+        "git_config": {
+          "user_name": "Champion User",
+          "user_email": "champion@example.com",
+          "scope": "Local"
+        },
+        "contains_submodules": false,
+        "is_valid_git_repo": true
+      }
+    ]
+  ]
 }
 
