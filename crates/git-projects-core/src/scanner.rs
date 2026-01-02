@@ -337,11 +337,13 @@ mod tests {
         fs::create_dir(dir.join(".git"))
     }
 
+/*
     /// Helper to create a mock submodule (Git file instead of directory)
+    /// #[allow(dead_code)]
     fn create_mock_submodule(dir: &Path) -> std::io::Result<()> {
         fs::write(dir.join(".git"), "gitdir: ../.git/modules/submodule")
     }
-
+*/
     #[test]
     fn test_scanner_creation() {
         let scanner = DefaultScanner::new();
