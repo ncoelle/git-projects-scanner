@@ -100,41 +100,6 @@ impl DefaultScanner {
         self
     }
 
-    /// Checks if a path is a Git repository.
-    ///
-    /// Returns:
-    /// - `Some(git_dir)` if it's a repository (where `git_dir` is the `.git` location)
-    /// - `None` if it's not a repository
-    ///
-    /// # Detection Logic
-    ///
-    /// A path is considered a Git repository if:
-    /// - It contains a `.git` directory (normal repo), OR
-    /// - It contains a `.git` file (submodule or worktree)
-    fn is_git_repository(&self, path: &Path) -> Option<PathBuf> {
-        let git_dir = path.join(".git");
-        if git_dir.exists() {
-            Some(git_dir)
-        } else {
-            None
-        }
-    }
-
-    /// Determines if a repository is a submodule.
-    ///
-    /// A repository is a submodule if its `.git` is a **file** (not a directory)
-    /// that points to the parent repository's `.git/modules/` directory.
-    fn is_submodule(&self, git_path: &Path) -> bool {
-        git_path.is_file()
-    }
-
-    /// Checks if a repository contains submodules.
-    ///
-    /// Detection is done by looking for a `.gitmodules` file in the repo root.
-    fn has_submodules(&self, repo_path: &Path) -> bool {
-        repo_path.join(".gitmodules").exists()
-    }
-
     /// Extracts metadata for a single Git repository.
     ///
     /// This is the core function that populates a [`GitProject`] with all
@@ -144,7 +109,9 @@ impl DefaultScanner {
     ///
     /// Returns an error if critical Git operations fail. Non-critical failures
     /// (like missing config) result in `None` values in the returned struct.
-    fn analyze_repository(&self, path: &Path, git_path: &Path) -> Result<GitProject> {
+    fn analyze_repository(&self, repo: gix::Repository) -> Result<GitProject> {
+        let path = repo.workdir().unwrap_or_else(|| repo.path());
+        
         if self.verbose {
             eprintln!("Analyzing repository: {}", path.display());
         }
@@ -157,18 +124,30 @@ impl DefaultScanner {
             .to_string();
 
         // Determine if this is a submodule
-        let is_submodule = self.is_submodule(git_path);
+        // A repository is a submodule if its .git is a file
+        let is_submodule = repo.path().is_file();
 
         // Check if this repo has submodules
-        let has_submodules = self.has_submodules(path);
+        let has_submodules = path.join(".gitmodules").exists();
 
         // Extract remote URLs using gitoxide
-        let remotes = git_analyzer::extract_remote_urls(path).unwrap_or_else(|e| {
-            if self.verbose {
-                eprintln!("  Warning: Failed to extract remotes: {}", e);
+        let mut remotes = Vec::new();
+        let remote_names = repo.remote_names();
+        for name in remote_names {
+            let name_str = name.as_ref();
+            if let Ok(remote) = repo.find_remote(name_str) {
+                if let Some(url) = remote.url(gix::remote::Direction::Fetch) {
+                    let url_string = url.to_bstring().to_string();
+                    let (service, account) = git_analyzer::parse_git_url(&url_string);
+                    remotes.push(crate::models::RemoteUrl {
+                        name: name_str.to_string(),
+                        url: url_string,
+                        service,
+                        account,
+                    });
+                }
             }
-            Vec::new()
-        });
+        }
 
         // Extract Git configuration (user.name, user.email)
         let config = git_analyzer::extract_git_config(path).ok();
@@ -239,44 +218,50 @@ impl DefaultScanner {
             }
 
             // Check if this is a Git repository
-            if let Some(git_path) = self.is_git_repository(path) {
-                let is_submodule = self.is_submodule(&git_path);
+            if let Ok(repo) = gix::discover(path) {
+                // gix::discover might find a parent repo, we only want to detect
+                // if the current directory is the root of a repo.
+                let work_dir = repo.workdir();
+                let git_path = repo.path().to_path_buf();
 
-                // Decide whether to include this repository
-                let should_include = if is_submodule {
-                    config.include_submodules
+                let is_root = if let Some(wd) = work_dir {
+                    wd == path
                 } else {
-                    true // Always include non-submodule repos
+                    git_path == path || git_path.parent() == Some(path)
                 };
 
-                if should_include {
-                    match self.analyze_repository(path, &git_path) {
-                        Ok(project) => {
-                            visited_repos.insert(path.to_path_buf());
-                            projects.push(project);
+                if is_root {
+                    let is_submodule = git_path.is_file();
 
-                            if self.verbose {
-                                eprintln!(
-                                    "  Found: {} ({})",
-                                    path.display(),
-                                    if is_submodule { "submodule" } else { "repo" }
-                                );
+                    // Decide whether to include this repository
+                    let should_include = if is_submodule {
+                        config.include_submodules
+                    } else {
+                        true // Always include non-submodule repos
+                    };
+
+                    if should_include {
+                        match self.analyze_repository(repo) {
+                            Ok(project) => {
+                                visited_repos.insert(path.to_path_buf());
+                                projects.push(project);
+
+                                if self.verbose {
+                                    eprintln!(
+                                        "  Found: {} ({})",
+                                        path.display(),
+                                        if is_submodule { "submodule" } else { "repo" }
+                                    );
+                                }
                             }
-                        }
-                        Err(e) => {
-                            if self.verbose {
-                                eprintln!("  Error analyzing {}: {}", path.display(), e);
+                            Err(e) => {
+                                if self.verbose {
+                                    eprintln!("  Error analyzing {}: {}", path.display(), e);
+                                }
+                                // Continue scanning even if one repo fails
                             }
-                            // Continue scanning even if one repo fails
                         }
                     }
-                }
-
-                // If this is a regular repo (not a submodule), don't descend into it
-                // This prevents finding nested repos inside repos
-                if !is_submodule {
-                    // Note: walkdir doesn't provide a way to skip descendants from the iterator
-                    // So we rely on the is_inside_known_repo check above
                 }
             }
         }
@@ -289,9 +274,6 @@ impl DefaultScanner {
     }
 
     /// Checks if a path is inside a repository we've already discovered.
-    ///
-    /// This prevents scanning nested repositories (repos inside repos),
-    /// which can happen with monorepos or when people clone repos inside repos.
     fn is_inside_known_repo(&self, path: &Path, known_repos: &HashSet<PathBuf>) -> bool {
         for repo_path in known_repos {
             if path != repo_path && path.starts_with(repo_path) {
@@ -339,7 +321,13 @@ mod tests {
 
     /// Helper to create a mock Git repository for testing
     fn create_mock_repo(dir: &Path) -> std::io::Result<()> {
-        fs::create_dir(dir.join(".git"))
+        let git_dir = dir.join(".git");
+        fs::create_dir(&git_dir)?;
+        // gix::discover needs some basic files to recognize it as a repo
+        fs::write(git_dir.join("HEAD"), "ref: refs/heads/main\n")?;
+        fs::create_dir(git_dir.join("refs"))?;
+        fs::create_dir(git_dir.join("objects"))?;
+        Ok(())
     }
 
 /*
@@ -361,45 +349,41 @@ mod tests {
     #[test]
     fn test_is_git_repository() {
         let temp = TempDir::new().unwrap();
-        let scanner = DefaultScanner::new();
-
         // Not a repo initially
-        assert!(scanner.is_git_repository(temp.path()).is_none());
+        assert!(gix::discover(temp.path()).is_err());
 
         // Create .git directory
         create_mock_repo(temp.path()).unwrap();
-        assert!(scanner.is_git_repository(temp.path()).is_some());
+        assert!(gix::discover(temp.path()).is_ok());
     }
 
     #[test]
     fn test_is_submodule() {
         let temp = TempDir::new().unwrap();
-        let scanner = DefaultScanner::new();
 
         // Regular repo (directory)
         let git_dir = temp.path().join(".git");
         fs::create_dir(&git_dir).unwrap();
-        assert!(!scanner.is_submodule(&git_dir));
+        assert!(git_dir.is_dir());
 
         // Submodule (file)
         let submodule_dir = temp.path().join("submodule");
         fs::create_dir(&submodule_dir).unwrap();
         let git_file = submodule_dir.join(".git");
         fs::write(&git_file, "gitdir: ../.git/modules/sub").unwrap();
-        assert!(scanner.is_submodule(&git_file));
+        assert!(git_file.is_file());
     }
 
     #[test]
     fn test_has_submodules() {
         let temp = TempDir::new().unwrap();
-        let scanner = DefaultScanner::new();
 
         // No .gitmodules file
-        assert!(!scanner.has_submodules(temp.path()));
+        assert!(!temp.path().join(".gitmodules").exists());
 
         // Create .gitmodules file
         fs::write(temp.path().join(".gitmodules"), "[submodule \"test\"]").unwrap();
-        assert!(scanner.has_submodules(temp.path()));
+        assert!(temp.path().join(".gitmodules").exists());
     }
 
     #[test]
@@ -572,5 +556,34 @@ mod tests {
         assert!(scanner.is_inside_known_repo(&repo_path.join("d"), &known));
         assert!(!scanner.is_inside_known_repo(&repo_path, &known));
         assert!(!scanner.is_inside_known_repo(&PathBuf::from("/a/b/other"), &known));
+    }
+
+    #[test]
+    fn test_scan_with_worktree() {
+        let temp = TempDir::new().unwrap();
+        let main_repo = temp.path().join("main_repo");
+        let worktree = temp.path().join("worktree");
+        fs::create_dir_all(&main_repo).unwrap();
+        fs::create_dir_all(&worktree).unwrap();
+
+        // Create a mock main repo
+        create_mock_repo(&main_repo).unwrap();
+        
+        // Create a mock worktree (a .git file pointing to the main repo)
+        // In reality it's more complex, but for gix::discover, 
+        // a .git file is enough to be recognized if it looks like a git file
+        fs::write(worktree.join(".git"), "gitdir: ../main_repo/.git").unwrap();
+
+        let scanner = DefaultScanner::new();
+        let config = ScanConfig {
+            root_paths: vec![temp.path().to_path_buf()],
+            max_depth: Some(2),
+            follow_symlinks: false,
+            include_submodules: true,
+        };
+
+        let projects = scanner.scan(&config).unwrap();
+        // Should find both the main repo and the worktree
+        assert_eq!(projects.len(), 2);
     }
 }
