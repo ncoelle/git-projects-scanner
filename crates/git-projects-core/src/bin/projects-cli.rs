@@ -106,13 +106,16 @@ fn main() -> Result<()> {
 
     // Show start message
     if !cli.json && cli.verbose {
-        eprintln!("{}", localizer.get("scan-started", None));
+        eprintln!(
+            "{}",
+            clean_fluent_string(&localizer.get("scan-started", None))
+        );
         for root in &config.root_paths {
+            let path_str = root.display().to_string();
             eprintln!(
                 "{}",
-                localizer.get(
-                    "scan-started-path",
-                    Some(&[("path", root.display().to_string().as_str())])
+                clean_fluent_string(
+                    &localizer.get("scan-started-path", Some(&[("path", path_str.as_str())]))
                 )
             );
         }
@@ -131,7 +134,7 @@ fn main() -> Result<()> {
         let count = projects.len().to_string();
         eprintln!(
             "{}",
-            localizer.get("scan-complete", Some(&[("count", &count)]))
+            clean_fluent_string(&localizer.get("scan-complete", Some(&[("count", &count)])))
         );
     }
 
@@ -236,7 +239,10 @@ fn output_json(projects: &[GitProject]) -> Result<()> {
 /// Outputs projects as a formatted table to stdout
 fn output_table(projects: &[GitProject], localizer: &Localizer) -> Result<()> {
     if projects.is_empty() {
-        println!("{}", localizer.get("scan-no-results", None));
+        println!(
+            "{}",
+            clean_fluent_string(&localizer.get("scan-no-results", None))
+        );
         return Ok(());
     }
 
@@ -317,16 +323,15 @@ fn output_table(projects: &[GitProject], localizer: &Localizer) -> Result<()> {
     let count = projects.len().to_string();
     println!(
         "{}",
-        localizer.get("scan-complete", Some(&[("count", &count)]))
+        clean_fluent_string(&localizer.get("scan-complete", Some(&[("count", &count)])))
     );
-
     Ok(())
 }
 
 /// Formats remote information for display
 fn format_remotes(project: &GitProject, localizer: &Localizer) -> String {
     if project.remotes.is_empty() {
-        return localizer.get("remote-none", None);
+        return clean_fluent_string(&localizer.get("remote-none", None));
     }
 
     let first = &project.remotes[0];
@@ -347,10 +352,9 @@ fn format_remotes(project: &GitProject, localizer: &Localizer) -> String {
     // Add count if multiple remotes
     if project.remotes.len() > 1 {
         let count = project.remotes.len().to_string();
-        result.push_str(&format!(
-            " (+{})",
-            localizer.get("remote-count", Some(&[("count", &count)]))
-        ));
+        let remote_count =
+            clean_fluent_string(&localizer.get("remote-count", Some(&[("count", &count)])));
+        result.push_str(&format!(" (+{})", remote_count));
     }
 
     result
@@ -361,9 +365,9 @@ fn format_config(project: &GitProject, localizer: &Localizer) -> String {
     match &project.config {
         Some(config) => {
             let scope = match config.scope {
-                ConfigScope::Local => localizer.get("config-local", None),
-                ConfigScope::Global => localizer.get("config-global", None),
-                ConfigScope::System => localizer.get("config-system", None),
+                ConfigScope::Local => clean_fluent_string(&localizer.get("config-local", None)),
+                ConfigScope::Global => clean_fluent_string(&localizer.get("config-global", None)),
+                ConfigScope::System => clean_fluent_string(&localizer.get("config-system", None)),
             };
 
             match (&config.user_name, &config.user_email) {
@@ -381,18 +385,40 @@ fn format_config(project: &GitProject, localizer: &Localizer) -> String {
                 }
             }
         }
-        None => localizer.get("config-none", None),
+        None => clean_fluent_string(&localizer.get("config-none", None)),
     }
 }
 
+/// Removes Unicode control characters that Fluent might add
+fn clean_fluent_string(s: &str) -> String {
+    s.chars()
+        .filter(|c| {
+            !matches!(
+                *c,
+                '\u{2068}' |  // FIRST STRONG ISOLATE
+            '\u{2069}' |  // POP DIRECTIONAL ISOLATE
+            '\u{202A}' |  // LEFT-TO-RIGHT EMBEDDING
+            '\u{202B}' |  // RIGHT-TO-LEFT EMBEDDING
+            '\u{202C}' |  // POP DIRECTIONAL FORMATTING
+            '\u{202D}' |  // LEFT-TO-RIGHT OVERRIDE
+            '\u{202E}' // RIGHT-TO-LEFT OVERRIDE
+            )
+        })
+        .collect()
+}
+
 /// Truncates a string to a maximum width, adding "..." if truncated
+/// Unicode-safe version that respects character boundaries
 fn truncate(s: &str, max_width: usize) -> String {
-    if s.len() <= max_width {
+    let char_count = s.chars().count();
+
+    if char_count <= max_width {
         s.to_string()
     } else if max_width <= 3 {
         "...".to_string()
     } else {
-        format!("{}...", &s[..max_width - 3])
+        // Use char indices instead of byte indices
+        s.chars().take(max_width - 3).collect::<String>() + "..."
     }
 }
 
@@ -406,6 +432,23 @@ mod tests {
         assert_eq!(truncate("hello", 10), "hello");
         assert_eq!(truncate("hello world", 8), "hello...");
         assert_eq!(truncate("hi", 2), "hi");
+
+        // Test with Unicode
+        assert_eq!(truncate("café", 10), "café");
+        assert_eq!(truncate("hello 世界", 10), "hello 世界");
+
+        // truncate doesn't clean control characters - that's done by clean_fluent_string
+        // Just test that it doesn't panic on them
+        let result = truncate("test\u{2068}123\u{2069}", 10);
+        assert_eq!(result.chars().count(), 9); // 4 + 3 + 2 = 9 chars total
+    }
+
+    #[test]
+    fn test_clean_fluent_string() {
+        // Test that control characters are removed
+        assert_eq!(clean_fluent_string("test\u{2068}123\u{2069}"), "test123");
+        assert_eq!(clean_fluent_string("hello"), "hello");
+        assert_eq!(clean_fluent_string("\u{2068}wrapped\u{2069}"), "wrapped");
     }
 
     #[test]
