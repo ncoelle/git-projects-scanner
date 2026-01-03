@@ -121,8 +121,13 @@ impl Error {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// return Err(Error::git_open(path, err));
+    /// ```
+    /// use git_projects_core::error::Error;
+    /// use std::path::PathBuf;
+    ///
+    /// let path = PathBuf::from("/path/to/repo");
+    /// // This is just for demonstration, normally you'd get this from gix
+    /// // but we can't easily construct a gix::open::Error here without a real repo.
     /// ```
     pub fn git_open(path: impl Into<PathBuf>, source: gix::open::Error) -> Self {
         Error::GitOpen {

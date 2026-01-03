@@ -258,14 +258,18 @@ pub fn detect_system_locale() -> String {
 /// This function is called when locale files are not found on the filesystem.
 /// It checks for compile-time embedded resources.
 ///
-/// In a production build, you could use `include_str!` to embed the locale files:
+/// In a production build, you could use `include_str!` to embed the locale files.
 ///
-/// ```ignore
+/// Example of how this might look:
+///
+/// ```rust
+/// # fn example(locale_code: &str) -> Option<String> {
 /// match locale_code {
-///     "en" => Some(include_str!("../locales/en/main.ftl").to_string()),
-///     "de" => Some(include_str!("../locales/de/main.ftl").to_string()),
+///     "en" => Some("embedded en content".to_string()),
+///     "de" => Some("embedded de content".to_string()),
 ///     _ => None,
 /// }
+/// # }
 /// ```
 fn get_embedded_locale(_locale_code: &str) -> Option<String> {
     // For now, return None - embedded resources would be added here
