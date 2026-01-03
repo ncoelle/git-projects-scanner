@@ -377,4 +377,28 @@ mod tests {
         let scope = determine_config_scope(None, None);
         assert_eq!(scope, ConfigScope::System);
     }
+
+    #[test]
+    fn test_parse_ssh_with_port() {
+        // ssh://git@github.com:22/user/repo.git
+        let (service, account) = parse_git_url("ssh://git@github.com:22/user/repo.git");
+        assert_eq!(service, Some("github".to_string()));
+        // Current implementation might fail to parse account correctly if port is present
+        // Let's see what happens.
+        assert_eq!(account, Some("user".to_string()));
+    }
+
+    #[test]
+    fn test_parse_sourcehut() {
+        let (service, account) = parse_git_url("https://git.sr.ht/~user/repo");
+        assert_eq!(service, Some("sourcehut".to_string()));
+        assert_eq!(account, Some("~user".to_string()));
+    }
+
+    #[test]
+    fn test_parse_file_url() {
+        let (service, account) = parse_git_url("file:///path/to/repo.git");
+        assert_eq!(service, None);
+        assert_eq!(account, None);
+    }
 }

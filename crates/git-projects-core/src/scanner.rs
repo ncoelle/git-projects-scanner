@@ -227,6 +227,11 @@ impl DefaultScanner {
 
             let path = entry.path();
 
+            // If we are NOT following symlinks, skip if the path is a symlink
+            if !config.follow_symlinks && entry.path_is_symlink() {
+                continue;
+            }
+
             // Skip if we're already inside a repository we've found
             // (unless it's a submodule and we want to include those)
             if self.is_inside_known_repo(path, &visited_repos) {
@@ -451,5 +456,121 @@ mod tests {
         assert!(result.is_ok());
         // The actual analysis will fail, so we might get 0 projects
         // This is expected with a mock .git directory
+    }
+
+    #[test]
+    fn test_scan_max_depth() {
+        let temp = TempDir::new().unwrap();
+        let scanner = DefaultScanner::new();
+
+        // Create a repo at depth 2
+        let d1 = temp.path().join("d1");
+        let d2 = d1.join("d2");
+        let repo_dir = d2.join("repo");
+        fs::create_dir_all(&repo_dir).unwrap();
+        create_mock_repo(&repo_dir).unwrap();
+
+        // Scan with max_depth 1 (should not find the repo)
+        let config = ScanConfig {
+            root_paths: vec![temp.path().to_path_buf()],
+            max_depth: Some(1),
+            follow_symlinks: false,
+            include_submodules: true,
+        };
+        let projects = scanner.scan(&config).unwrap();
+        assert_eq!(projects.len(), 0);
+
+        // Scan with max_depth 3 (should find the repo)
+        let config = ScanConfig {
+            root_paths: vec![temp.path().to_path_buf()],
+            max_depth: Some(3),
+            follow_symlinks: false,
+            include_submodules: true,
+        };
+        let projects = scanner.scan(&config).unwrap();
+        assert_eq!(projects.len(), 1);
+    }
+
+    #[test]
+    #[cfg(unix)] // Symlinks are easier to test on Unix
+    fn test_scan_follow_symlinks() {
+        use std::os::unix::fs::symlink;
+
+        let temp = TempDir::new().unwrap();
+        let scanner = DefaultScanner::new().with_verbose(true);
+
+        let real_repo = temp.path().join("real-repo");
+        fs::create_dir(&real_repo).unwrap();
+        create_mock_repo(&real_repo).unwrap();
+
+        // Create a symlink to the repo
+        let symlink_dir = temp.path().join("symlink-to-repo");
+        symlink(&real_repo, &symlink_dir).unwrap();
+
+        // Scan without following symlinks
+        let config = ScanConfig {
+            root_paths: vec![temp.path().to_path_buf()],
+            max_depth: Some(1),
+            follow_symlinks: false,
+            include_submodules: true,
+        };
+        let projects = scanner.scan(&config).unwrap();
+        // Should find only real-repo. symlink-to-repo is a symlink, and is_git_repository checks for .git inside it.
+        // If follow_symlinks is false, WalkDir still returns the symlink entry.
+        // But path.join(".git").exists() might or might not follow the symlink depending on OS/Rust version.
+        // Actually, Path::exists() follows symlinks.
+        
+        // If we want to strictly NOT follow symlinks even if they look like a repo,
+        // we might need to check if the path itself is a symlink.
+        
+        assert_eq!(projects.len(), 1, "Should find 1 project when follow_symlinks is false");
+
+        // Scan with following symlinks
+        let config = ScanConfig {
+            root_paths: vec![temp.path().to_path_buf()],
+            max_depth: Some(1),
+            follow_symlinks: true,
+            include_submodules: true,
+        };
+        let projects = scanner.scan(&config).unwrap();
+        // Should find both real-repo and symlink-to-repo
+        assert_eq!(projects.len(), 2, "Should find 2 projects when follow_symlinks is true");
+    }
+
+    #[test]
+    fn test_scan_nested_repos() {
+        let temp = TempDir::new().unwrap();
+        let scanner = DefaultScanner::new();
+
+        let parent_repo = temp.path().join("parent");
+        fs::create_dir(&parent_repo).unwrap();
+        create_mock_repo(&parent_repo).unwrap();
+
+        let nested_repo = parent_repo.join("nested");
+        fs::create_dir(&nested_repo).unwrap();
+        create_mock_repo(&nested_repo).unwrap();
+
+        // By default, we should NOT find nested repos that are not submodules
+        let config = ScanConfig {
+            root_paths: vec![temp.path().to_path_buf()],
+            max_depth: Some(3),
+            follow_symlinks: false,
+            include_submodules: true,
+        };
+        let projects = scanner.scan(&config).unwrap();
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0].path, parent_repo);
+    }
+
+    #[test]
+    fn test_is_inside_known_repo() {
+        let scanner = DefaultScanner::new();
+        let mut known = HashSet::new();
+        let repo_path = PathBuf::from("/a/b/c");
+        known.insert(repo_path.clone());
+
+        assert!(scanner.is_inside_known_repo(&repo_path.join("d"), &known));
+        assert!(!scanner.is_inside_known_repo(&repo_path, &known));
+        assert!(!scanner.is_inside_known_repo(&PathBuf::from("/a/b/other"), &known));
     }
 }

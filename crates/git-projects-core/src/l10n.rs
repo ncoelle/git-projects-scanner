@@ -67,18 +67,26 @@ impl Localizer {
     /// let localizer = Localizer::new("de").unwrap();
     /// ```
     pub fn new(locale_str: &str) -> Result<Self> {
-        let locale: LanguageIdentifier = locale_str
-            .parse()
-            .map_err(|_| Error::l10n(format!("Invalid locale: {}", locale_str)))?;
+        let locale_id: LanguageIdentifier = match locale_str.parse() {
+            Ok(id) => id,
+            Err(_) => {
+                // If the locale identifier is invalid, fall back to default
+                if locale_str != DEFAULT_LOCALE {
+                    DEFAULT_LOCALE.parse().unwrap()
+                } else {
+                    return Err(Error::l10n(format!("Invalid locale: {}", locale_str)));
+                }
+            }
+        };
 
         // Try to load the requested locale, fall back to default if it fails
-        let (bundle, actual_locale) = Self::load_locale(&locale).or_else(|_| {
+        let (bundle, actual_locale) = Self::load_locale(&locale_id).or_else(|e| {
             if locale_str != DEFAULT_LOCALE {
                 // Fall back to default locale
                 let default: LanguageIdentifier = DEFAULT_LOCALE.parse().unwrap();
                 Self::load_locale(&default)
             } else {
-                Err(Error::l10n("Failed to load default locale".to_string()))
+                Err(e)
             }
         })?;
 
@@ -303,10 +311,24 @@ mod tests {
     #[test]
     fn test_invalid_locale() {
         let result = Localizer::new("invalid-locale-999");
-        // Should either error or fall back to default
-        assert!(result.is_ok() || result.is_err());
+        // Should fall back to default if it fails to load the specified one
+        assert!(result.is_ok());
     }
 
-    // Note: Full integration tests with actual .ftl files should be in
-    // a separate integration test directory once the locale files are created
+    #[test]
+    fn test_missing_message() {
+        let localizer = Localizer::new("en").unwrap();
+        let msg = localizer.get("non-existent-key", None);
+        // Should return the key in brackets if not found
+        assert_eq!(msg, "[non-existent-key]");
+    }
+
+    #[test]
+    fn test_missing_arguments() {
+        // Assume "scanning" message exists and requires arguments
+        // If we don't provide them, it should still return something (maybe with placeholders)
+        let localizer = Localizer::new("en").unwrap();
+        let msg = localizer.get("scanning", None);
+        assert!(!msg.is_empty());
+    }
 }
